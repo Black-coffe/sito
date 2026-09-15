@@ -1,0 +1,43 @@
+{% extends "project.html" %}
+{% block panel %}
+<div class="stack">
+  <form method="post" action="/projects/{{ project.id }}/settings" class="panel">
+    <div class="panel-head"><h2>Project</h2></div>
+    <div class="panel-body form-grid">
+      <div class="form-grid two">
+        <div class="field"><label for="s-name">Name</label><input id="s-name" name="name" value="{{ project.name }}" required maxlength="200"></div>
+        <div class="field"><label for="s-desc">Short description</label><input id="s-desc" name="description" value="{{ project.description }}" maxlength="500"></div>
+      </div>
+      <div class="field">
+        <label for="s-context">About the business</label>
+        <textarea id="s-context" name="context" rows="6">{{ project.context }}</textarea>
+        <p class="hint">AI steps put this text into their prompts. Say what you sell, to whom, where, and what is out of scope — the more specific, the better the relevance scores.</p>
+      </div>
+      <div class="form-actions"><button class="btn primary">{{ icon('check') }}<span>Save</span></button></div>
+    </div>
+  </form>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Files</h2></div>
+    <div class="panel-body">
+      <dl class="kv">
+        <dt>Project id</dt><dd class="num">{{ project.id }}</dd>
+        <dt>Created</dt><dd>{{ project.created_at|dt }}</dd>
+        <dt>Exports folder</dt><dd><code>{{ exports_dir }}</code></dd>
+      </dl>
+    </div>
+  </section>
+
+  <form method="post" action="/projects/{{ project.id }}/delete" class="panel">
+    <div class="panel-head"><h2>Delete project</h2></div>
+    <div class="panel-body form-grid">
+      <p class="muted">Deletes the keywords, pipeline, runs, snapshots, SERP data and clusters of this project. Connections and exported files are kept. This cannot be undone.</p>
+      <div class="field">
+        <label for="s-confirm">Type <strong>{{ project.name }}</strong> to confirm</label>
+        <input id="s-confirm" name="confirm_name" autocomplete="off">
+      </div>
+      <div class="form-actions"><button class="btn danger">{{ icon('trash-2') }}<span>Delete project</span></button></div>
+    </div>
+  </form>
+</div>
+{% endblock %}

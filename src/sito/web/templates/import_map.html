@@ -1,0 +1,64 @@
+{% extends "project.html" %}
+{% block panel %}
+<div class="panel">
+  <div class="panel-head"><h2>Map columns — {{ filename }}</h2></div>
+  <div class="panel-body stack">
+    <p class="hint">Choose what each column means. Columns left as "Custom field" are kept on the keyword's data
+      (visible and filterable on the Keywords tab); "Ignore" drops the column.</p>
+    <form method="post" action="{{ action }}">
+      {% if raw_text is not none %}<input type="hidden" name="raw_text" value="{{ raw_text }}">{% endif %}
+
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              {% for col in preview.columns %}
+              <th class="wrap">
+                <div class="field">
+                  <label class="small">{{ col }}</label>
+                  <select name="target_{{ loop.index0 }}">
+                    {% for value, label in column_options[col] %}
+                    <option value="{{ value }}" {% if mapping[col] == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in preview_rows %}
+            <tr>{% for col in preview.columns %}<td class="wrap">{{ row.get(col, '') }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="hint">Showing the first {{ preview_rows|length }} of {{ preview.rows|length }} row(s).</p>
+
+      <div class="form-grid two">
+        <fieldset>
+          <legend>Import mode</legend>
+          <div class="stack">
+            {% for value, label, help in modes %}
+            <label class="check">
+              <input type="radio" name="mode" value="{{ value }}" {% if value == 'merge' %}checked{% endif %}>
+              <span>{{ label }}<br><span class="hint">{{ help }}</span></span>
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        <div class="field">
+          <label for="source-label">Source label</label>
+          <input id="source-label" name="source_label" value="{{ source_label }}" maxlength="100">
+          <p class="hint">Recorded as the "source" of newly added keywords.</p>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn primary">{{ icon('check') }}<span>Import</span></button>
+        <a class="btn ghost" href="/projects/{{ project.id }}/import">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

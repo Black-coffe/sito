@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_fields.html" import field %}
+{% block title %}{{ name }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>{{ name if row else 'New ' ~ cls.name ~ ' connection' }}</h1>
+    <p class="lede">{{ kind_label }} · {{ cls.summary }}</p>
+  </div>
+  <a class="btn ghost" href="/connections">{{ icon('arrow-left') }}<span>Back to connections</span></a>
+</header>
+
+<div class="split">
+  <form method="post" action="{{ '/connections/' ~ row.id if row else '/connections/new/' ~ cls.id }}" class="form-grid" autocomplete="off">
+    {% if errors %}
+    <div class="flash error">{{ icon('circle-alert') }}<div>Not saved. Check the highlighted fields:{% for key, msg in errors.items() %}
+{{ key }} — {{ msg }}{% endfor %}</div></div>
+    {% endif %}
+    <div class="field">
+      <label for="c-name">Connection name</label>
+      <input id="c-name" name="__name" value="{{ name }}" maxlength="200">
+      <p class="hint">Shown in step settings. Useful when you have several keys, e.g. "OpenAI — personal".</p>
+    </div>
+    <div class="fields-grid">
+    {% for ff in fields %}
+      {{ field(ff) }}
+      {% if errors.get(ff.name) %}<p class="error-text wide">{{ errors.get(ff.name) }}</p>{% endif %}
+    {% endfor %}
+    </div>
+    <p class="hint">Key fields accept <code>env:VARIABLE_NAME</code> to read the value from an environment variable instead of storing it.</p>
+    <div class="form-actions">
+      <button class="btn primary" name="__then" value="test">{{ icon('plug') }}<span>Save and test</span></button>
+      <button class="btn">{{ icon('check') }}<span>Save</span></button>
+      <a class="btn ghost" href="/connections">Cancel</a>
+    </div>
+  </form>
+
+  <aside class="aside-doc" aria-label="How to set up {{ cls.name }}">
+    <div class="stack">
+      <div class="row"><span class="label">How to set it up</span>
+        {% if cls.signup_url %}<span class="spacer"></span><a class="btn sm" href="{{ cls.signup_url }}" target="_blank" rel="noopener">{{ icon('key-round') }}<span>Get a key</span>{{ icon('external-link') }}</a>{% endif %}
+      </div>
+      <div class="prose">{{ (cls.docs or 'No setup notes for this connector.')|markdown }}</div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

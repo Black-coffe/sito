@@ -1,0 +1,49 @@
+{# Render a sito.core.forms.FormField. `conns` maps connection kind -> list of Connection rows. #}
+{% macro field(ff, conns={}, prefix="") %}
+{% set fid = "f-" ~ prefix ~ ff.name %}
+{% if ff.widget == "checkbox" %}
+<div class="field">
+  <label class="check" for="{{ fid }}"><input type="checkbox" id="{{ fid }}" name="{{ ff.name }}" value="1" {% if ff.value %}checked{% endif %}><span>{{ ff.label }}</span></label>
+  {% if ff.help %}<p class="hint">{{ ff.help }}</p>{% endif %}
+</div>
+{% else %}
+<div class="field{% if ff.widget in ('text', 'textarea', 'list', 'password', 'connection') %} wide{% endif %}">
+  <label for="{{ fid }}">{{ ff.label }}{% if ff.required %} <span class="req" aria-hidden="true">*</span>{% endif %}</label>
+  {% if ff.widget in ("textarea", "list") %}
+  <textarea id="{{ fid }}" name="{{ ff.name }}" rows="{{ 4 if ff.widget == 'list' else 5 }}" {% if ff.widget == 'list' %}placeholder="One per line"{% endif %}>{{ ff.value if ff.value is not none else '' }}</textarea>
+  {% elif ff.widget == "select" %}
+  <select id="{{ fid }}" name="{{ ff.name }}">
+    {% for value, label in ff.options %}<option value="{{ value }}" {% if value == (ff.value|string) %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  {% elif ff.widget == "connection" %}
+  {% set options = conns.get(ff.connection_kind, []) %}
+  <select id="{{ fid }}" name="{{ ff.name }}">
+    <option value="">Choose a {{ ff.connection_kind }} connection…</option>
+    {% for c in options %}<option value="{{ c.id }}" {% if c.id == ff.value %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+  </select>
+  {% if not options %}<p class="hint">No {{ ff.connection_kind }} connections yet. <a href="/connections/new?kind={{ ff.connection_kind }}">Add one</a>, then come back.</p>{% endif %}
+  {% elif ff.widget == "password" %}
+  <input type="password" id="{{ fid }}" name="{{ ff.name }}" autocomplete="off" spellcheck="false"
+         placeholder="{% if ff.secret_hint %}Saved {{ ff.secret_hint }} — leave blank to keep{% else %}Paste the key, or env:VARIABLE_NAME{% endif %}">
+  {% elif ff.widget == "int" %}
+  <input type="number" step="1" id="{{ fid }}" name="{{ ff.name }}" value="{{ ff.value if ff.value is not none else '' }}">
+  {% elif ff.widget == "float" %}
+  <input type="number" step="any" id="{{ fid }}" name="{{ ff.name }}" value="{{ ff.value if ff.value is not none else '' }}">
+  {% else %}
+  <input type="text" id="{{ fid }}" name="{{ ff.name }}" value="{{ ff.value if ff.value is not none else '' }}" spellcheck="false">
+  {% endif %}
+  {% if ff.help %}<p class="hint">{{ ff.help }}</p>{% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro badge(run, issues=[]) %}
+{% if run and run.status == 'running' %}<span class="badge running">Running</span>
+{% elif run and run.status == 'queued' %}<span class="badge queued">Queued</span>
+{% elif issues %}<span class="badge warn">Needs setup</span>
+{% elif not run %}<span class="badge idle">Not run yet</span>
+{% elif run.status == 'done' %}<span class="badge done" title="{{ run.finished_at|dt }}">Done · {{ run.finished_at|ago }}</span>
+{% elif run.status == 'failed' %}<span class="badge failed">Failed</span>
+{% elif run.status == 'cancelled' %}<span class="badge cancelled">Cancelled</span>
+{% endif %}
+{% endmacro %}

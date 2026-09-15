@@ -1,0 +1,36 @@
+{% extends "project.html" %}
+{% block panel %}
+{% if not clusters %}
+<div class="empty">
+  <h3>No clusters yet</h3>
+  <p>Clusters come from the "Cluster by SERP overlap" step, which needs a "Collect SERP" step to have run
+    first{% if not has_serp %} — no SERP data has been collected in this project yet{% endif %}. Add both steps
+    to the pipeline (Collect, then Group), then run them.</p>
+</div>
+{% else %}
+<div class="table-wrap">
+  <table class="data">
+    <thead>
+      <tr><th>Name</th><th>Main keyword</th><th class="num">Size</th><th class="num">Volume</th><th>Details</th></tr>
+    </thead>
+    <tbody>
+      {% for c in clusters %}
+      {% set data = c.data or {} %}
+      <tr>
+        <td class="kw"><a href="/projects/{{ project.id }}/keywords?cluster={{ c.id }}">{{ c.name }}</a></td>
+        <td class="wrap">{{ c.main_keyword or '—' }}</td>
+        <td class="num">{{ c.size|num }}</td>
+        <td class="num">{{ c.total_volume|num }}</td>
+        <td class="wrap">
+          {% if data.get('intent') %}<span class="tag accent">{{ data.intent }}</span>{% endif %}
+          {% if data.get('content_type') %}<span class="tag">{{ data.content_type }}</span>{% endif %}
+          {% if data.get('page_title') %}<span class="tag" title="Suggested page title">{{ data.page_title }}</span>{% endif %}
+          {% for d in data.get('top_domains', []) %}<span class="tag">{{ d }}</span>{% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

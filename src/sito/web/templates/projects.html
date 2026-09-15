@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_fields.html" import badge %}
+{% block title %}Projects{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Projects</h1>
+    <p class="lede">A project is one keyword research: a list of keywords and a stack of sieves that collect, clean, enrich, group and export it. Every step can be run, undone and exported.</p>
+  </div>
+  <a class="btn primary" href="#new">{{ icon('plus') }}<span>New project</span></a>
+</header>
+
+{% if show_keys_hint %}
+<div class="flash">{{ icon('key-round') }}<div>AI and SERP steps need your own API keys. <a href="/connections/new">Add a connection</a> — each provider page explains where to get a key and what it costs. Cleaning, filtering, autocomplete and export work without any keys.</div></div>
+{% endif %}
+
+{% if rows %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Project</th><th class="num">Passing</th><th class="num">Excluded</th><th class="num">Clusters</th><th class="num">Steps</th><th>Last run</th><th>Created</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td class="kw wrap"><a href="/projects/{{ r.project.id }}/keywords">{{ r.project.name }}</a>
+          {% if r.project.description %}<div class="hint">{{ r.project.description|truncate(110) }}</div>{% endif %}</td>
+        <td class="num">{{ r.counts.active|num }}</td>
+        <td class="num">{{ r.counts.excluded|num }}</td>
+        <td class="num">{{ r.counts.clusters|num }}</td>
+        <td class="num">{{ r.steps|num }}</td>
+        <td>{% if r.last_run %}{{ badge(r.last_run) }} <span class="hint">{{ r.last_run.title }}</span>{% else %}<span class="badge idle">Never</span>{% endif %}</td>
+        <td class="nowrap">{{ r.project.created_at|dt }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">
+  <h3>No projects yet</h3>
+  <p>Create a project, bring keywords in (an Ahrefs, Semrush or Keyword Planner export, a spreadsheet, or a pasted list), then run the sieves: clean, classify with AI, collect Google results, cluster, export.</p>
+  <a class="btn primary" href="#new">{{ icon('plus') }}<span>Create your first project</span></a>
+</div>
+{% endif %}
+
+<section class="section" id="new" aria-labelledby="new-title">
+  <h2 id="new-title">New project</h2>
+  <form method="post" action="/projects" class="panel panel-body form-grid">
+    <div class="form-grid two">
+      <div class="field">
+        <label for="p-name">Name <span class="req" aria-hidden="true">*</span></label>
+        <input id="p-name" name="name" required maxlength="200" placeholder="e.g. Dedicated servers — US">
+      </div>
+      <div class="field">
+        <label for="p-desc">Short description</label>
+        <input id="p-desc" name="description" maxlength="500" placeholder="What this research is for">
+      </div>
+    </div>
+    <div class="field">
+      <label for="p-context">About the business</label>
+      <textarea id="p-context" name="context" rows="4" placeholder="What the site sells or offers, to whom, in which market. AI steps read this to judge relevance and intent."></textarea>
+      <p class="hint">Optional but worth it: the AI classification step scores each keyword against this description.</p>
+    </div>
+    <fieldset>
+      <legend>Start with</legend>
+      <div class="stack">
+        {% for key, (label, stage_ids) in templates.items() %}
+        <label class="check"><input type="radio" name="template" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+          <span>{{ label }}</span></label>
+        {% endfor %}
+      </div>
+      <p class="hint">Steps can be added, removed, reordered and reconfigured at any time.</p>
+    </fieldset>
+    <div class="form-actions"><button class="btn primary">{{ icon('check') }}<span>Create project</span></button></div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "project.html" %}
+{% block panel %}
+{% if with_serp == 0 %}
+<div class="empty">
+  <h3>No SERP data yet</h3>
+  <p>The "Collect SERP" step fetches Google results for each keyword through a SERP connection (add one on the
+    <a href="/connections">Connections</a> page) and stores the top results here — the basis for clustering and
+    the competitor view below.</p>
+</div>
+{% else %}
+<div class="readouts" aria-label="SERP coverage">
+  <div class="readout"><span class="v">{{ with_serp|num }}</span><span class="k">With SERP data</span></div>
+  <div class="readout"><span class="v">{{ total_keywords|num }}</span><span class="k">Total keywords</span></div>
+</div>
+
+<div class="section">
+  <h2>Top domains</h2>
+  <p class="hint">Who shows up most often in the collected results — a quick read on who you're competing with.</p>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>Domain</th><th class="num">Results</th><th class="num">Keywords</th><th class="num">Avg. position</th><th class="num">Best position</th></tr>
+      </thead>
+      <tbody>
+        {% for row in domain_rows %}
+        <tr>
+          <td class="kw">{{ row.domain }}</td>
+          <td class="num">{{ row.results|num }}</td>
+          <td class="num">{{ row.keywords|num }}</td>
+          <td class="num">{{ row.avg_position|num }}</td>
+          <td class="num">{{ row.best_position|num }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Recently collected</h2>
+  <ul class="list">
+    {% for kw in recent_keywords %}
+    <li class="list-item">
+      <div>
+        <div class="title"><a href="/projects/{{ project.id }}/serp/{{ kw.id }}">{{ kw.keyword }}</a></div>
+        <div class="meta"><span>{{ (kw.data or {}).get('serp_results', 0) }} result(s)</span></div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

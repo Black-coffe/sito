@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="docs-layout">
+  <nav class="docs-nav" aria-label="Documentation">
+    {% for key, label in pages %}<a href="/docs/{{ key }}" {% if key == slug %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+  </nav>
+  <article class="prose">
+    {% block article %}{{ body|markdown }}{% endblock %}
+  </article>
+</div>
+{% endblock %}

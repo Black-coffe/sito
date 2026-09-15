@@ -1,0 +1,20 @@
+services:
+  sito:
+    build: .
+    image: sito:local
+    restart: unless-stopped
+    # Published on localhost only: sito has no login. See docs/configuration.md → Security.
+    ports:
+      - "127.0.0.1:8765:8765"
+    # A named volume keeps the image's ownership (the app runs as a non-root user), which a
+    # host bind mount would not guarantee on Linux. Back it up with:
+    #   docker compose cp sito:/data ./sito-backup
+    volumes:
+      - sito-data:/data
+    # Optional: variables referenced from connections as env:NAME (e.g. OPENAI_API_KEY=...).
+    env_file:
+      - path: .env
+        required: false
+
+volumes:
+  sito-data:

@@ -1,0 +1,194 @@
+{% from "_fields.html" import field, badge %}
+<section id="pipeline"
+  {% if is_active %}hx-get="/projects/{{ project.id }}/pipeline?path={{ here|urlencode }}&was_active=1" hx-trigger="every 1s" hx-swap="outerHTML"{% endif %}>
+  <div class="stack-head">
+    <h2>Pipeline</h2>
+    {% if is_active %}
+    <form method="post" action="/projects/{{ project.id }}/cancel">
+      <input type="hidden" name="next" value="{{ here }}">
+      <button class="btn sm danger">{{ icon('square') }}<span>Cancel run</span></button>
+    </form>
+    {% elif trays %}
+    <form method="post" action="/projects/{{ project.id }}/run-all">
+      <input type="hidden" name="next" value="{{ here }}">
+      <button class="btn sm primary" title="Run every enabled step from the top">{{ icon('play') }}<span>Run all</span></button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% macro insert_zone(position, last=false) %}
+    {% if not is_active %}
+    <div class="insert {{ 'is-last' if last }} {{ 'is-open' if add_at == position }}">
+      <a class="btn sm" href="{{ here }}?add_at={{ position }}#picker" {% if add_at == position %}aria-expanded="true"{% endif %}>{{ icon('plus') }}<span>{{ 'Add step' if last else 'Insert step' }}</span></a>
+    </div>
+    {% endif %}
+    {% if add_at == position %}
+    <div class="picker" id="picker">
+      <div class="picker-head"><span class="label">Add a step {{ 'at the end' if last else 'here' }}</span><a class="btn sm ghost icon-only" href="{{ here }}">{{ icon('x', 'Close') }}</a></div>
+      {% for kind, stages in catalog %}
+      <div class="picker-group">
+        <div class="label">{{ kind.label }}</div>
+        {% for s in stages %}
+        <div class="picker-item">
+          <span class="name">{{ s.name }}</span>
+          <span class="desc">{{ s.summary }}</span>
+          <form method="post" action="/projects/{{ project.id }}/steps">
+            <input type="hidden" name="stage_id" value="{{ s.id }}">
+            <input type="hidden" name="position" value="{{ position }}">
+            <input type="hidden" name="next" value="{{ here }}">
+            <button class="btn sm">{{ icon('plus') }}<span>Add</span></button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endmacro %}
+
+  {% if not trays %}
+    {% if add_at is none %}
+    <div class="ghost-tray">
+      <div class="ghost-inner">
+        <h3>No sieves yet</h3>
+        <p class="muted small">A pipeline is a stack of steps. Each one collects, cleans, enriches, groups or exports your keywords, and you can run, undo or export any of them.</p>
+        <div><a class="btn primary" href="{{ here }}?add_at=0#picker">{{ icon('plus') }}<span>Add the first step</span></a></div>
+      </div>
+    </div>
+    {% else %}{{ insert_zone(0, true) }}{% endif %}
+  {% else %}
+  <ol class="sieve">
+    {% for t in trays %}
+    {% if loop.index0 > 0 %}{{ insert_zone(t.index) }}{% endif %}
+    {% set run = t.run %}
+    <li class="tray{% if t.editing %} is-editing{% endif %}{% if not t.step.enabled %} is-disabled{% endif %}{% if run and run.status == 'running' %} is-running{% elif run and run.status == 'failed' %} is-failed{% endif %}{% if t.issues %} is-setup{% endif %}" id="step-{{ t.step.id }}">
+      <div class="tray-head">
+        <span class="tray-no" title="Step {{ t.no }}">{{ t.no }}</span>
+        <h3 class="tray-title">{{ t.step.title }}</h3>
+        {% if not t.step.enabled %}<span class="badge cancelled">Off</span>{% else %}{{ badge(run, t.issues) }}{% endif %}
+      </div>
+      <p class="tray-summary">{{ t.kind_label }}{% if t.stage and t.stage.name != t.step.title %} · {{ t.stage.name }}{% endif %}</p>
+
+      {% if t.progress %}
+        <div class="progress {{ 'indeterminate' if t.progress.percent is none }}" role="progressbar" aria-label="Progress"
+             {% if t.progress.percent is not none %}aria-valuenow="{{ t.progress.percent }}" aria-valuemin="0" aria-valuemax="100"{% endif %}
+             style="--p: {{ t.progress.percent or 0 }}%"><span></span></div>
+        <p class="tray-msg num">
+          {% if t.progress.total %}<strong>{{ t.progress.done|num }}</strong> / {{ t.progress.total|num }}{% if t.progress.percent is not none %} · {{ t.progress.percent }}%{% endif %}{% endif %}
+          {% if t.progress.message %} — {{ t.progress.message }}{% endif %}
+        </p>
+      {% elif t.before is not none %}
+        <div class="pass">
+          <div class="pass-bar" style="--in: {{ t.in_pct }}%; --out: {{ t.out_pct }}%" aria-hidden="true">
+            <span class="excluded"></span><span class="passing"></span><span class="mark"></span>
+          </div>
+          <div class="pass-legend">
+            <span>in <strong>{{ t.before|num }}</strong></span>
+            {% set delta = (t.after or 0) - t.before %}
+            {% if delta < 0 %}<a href="/projects/{{ project.id }}/keywords?status=excluded" title="See excluded keywords and why">excluded <strong>{{ (-delta)|num }}</strong></a>{% elif delta > 0 %}<span>added <strong>{{ delta|num }}</strong></span>{% else %}<span>no change in count</span>{% endif %}
+            <span>pass <strong>{{ (t.after or 0)|num }}</strong>{% if t.before and (t.after or 0) <= t.before %} · {{ ((t.after or 0) * 100 / t.before)|round|int }}%{% endif %}</span>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if run and run.status == 'failed' and run.error %}
+        <p class="tray-msg error">{{ run.error.splitlines()[0][:220] }} <a href="/projects/{{ project.id }}/runs/{{ run.id }}">Details</a></p>
+      {% elif run and run.status == 'cancelled' and run.message %}
+        <p class="tray-msg">{{ run.message }}</p>
+      {% endif %}
+
+      {% if t.issues and t.step.enabled %}
+      <ul class="tray-issues">
+        {% for issue in t.issues %}<li>{{ icon('circle-alert') }}<span>{{ issue }}</span></li>{% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if not is_active %}
+      <div class="tray-actions">
+        <form method="post" action="/projects/{{ project.id }}/steps/{{ t.step.id }}/run">
+          <input type="hidden" name="next" value="{{ here }}">
+          <button class="btn sm" {% if t.issues or not t.step.enabled %}disabled{% endif %} title="Run this step">{{ icon('play') }}<span>Run</span></button>
+        </form>
+        {% if not loop.last %}
+        <form method="post" action="/projects/{{ project.id }}/steps/{{ t.step.id }}/run-from">
+          <input type="hidden" name="next" value="{{ here }}">
+          <button class="btn sm ghost icon-only" title="Run this step and every enabled step below it">{{ icon('skip-forward', 'Run from here') }}</button>
+        </form>
+        {% endif %}
+        <a class="btn sm ghost icon-only" href="{{ here }}?edit={{ t.step.id }}#step-{{ t.step.id }}" title="Settings">{{ icon('settings-2', 'Settings') }}</a>
+        {% if run and run.status == 'done' and run.snapshot_id %}
+        <details class="menu">
+          <summary class="btn sm ghost icon-only" title="Export the list as it was after this step">{{ icon('download', 'Export result of this step') }}</summary>
+          <div class="menu-list" role="menu">
+            <span class="menu-label">After «{{ t.step.title }}»</span>
+            <a role="menuitem" href="/projects/{{ project.id }}/snapshots/{{ run.snapshot_id }}/export?format=xlsx">{{ icon('file-down') }}Excel (.xlsx)</a>
+            <a role="menuitem" href="/projects/{{ project.id }}/snapshots/{{ run.snapshot_id }}/export?format=csv">{{ icon('file-down') }}CSV</a>
+            <a role="menuitem" href="/projects/{{ project.id }}/snapshots/{{ run.snapshot_id }}/export?format=json">{{ icon('file-down') }}JSON</a>
+            {% if run.stats and run.stats.get('file') %}
+            <span class="sep" role="separator"></span>
+            <a role="menuitem" href="/projects/{{ project.id }}/runs/{{ run.id }}/file">{{ icon('file-down') }}File written by this step</a>
+            {% endif %}
+          </div>
+        </details>
+        {% endif %}
+        <span class="spacer"></span>
+        <details class="menu">
+          <summary class="btn sm ghost icon-only" title="More">{{ icon('chevron-down', 'More actions') }}</summary>
+          <div class="menu-list" role="menu">
+            {% if run and run.status in ('done', 'failed', 'cancelled') %}
+            <form method="post" action="/projects/{{ project.id }}/steps/{{ t.step.id }}/undo" data-confirm="Restore the keyword list to how it was before this step last ran? Later changes will be replaced (they stay in Snapshots).">
+              <input type="hidden" name="next" value="{{ here }}">
+              <button role="menuitem">{{ icon('undo-2') }}Undo this step (restore «before»)</button>
+            </form>
+            {% endif %}
+            {% if run %}<a role="menuitem" href="/projects/{{ project.id }}/runs/{{ run.id }}">{{ icon('history') }}Last run log</a>{% endif %}
+            <span class="sep" role="separator"></span>
+            {% if not loop.first %}
+            <form method="post" action="/projects/{{ project.id }}/steps/{{ t.step.id }}/move"><input type="hidden" name="direction" value="-1"><input type="hidden" name="next" value="{{ here }}"><button role="menuitem">{{ icon('arrow-up') }}Move up</button></form>
+            {% endif %}
+            {% if not loop.last %}
+            <form method="post" action="/projects/{{ project.id }}/steps/{{ t.step.id }}/move"><input type="hidden" name="direction" value="1"><input type="hidden" name="next" value="{{ here }}"><button role="menuitem">{{ icon('arrow-down') }}Move down</button></form>
+            {% endif %}
+            <form method="post" action="/projects/{{ project.id }}/steps/{{ t.step.id }}/toggle"><input type="hidden" name="next" value="{{ here }}"><button role="menuitem">{{ icon('ban') }}{{ 'Turn off (skip in Run all)' if t.step.enabled else 'Turn on' }}</button></form>
+            <span class="sep" role="separator"></span>
+            <form method="post" action="/projects/{{ project.id }}/steps/{{ t.step.id }}/delete" data-confirm="Remove the step «{{ t.step.title }}» from the pipeline? Keywords are not affected.">
+              <input type="hidden" name="next" value="{{ here }}">
+              <button role="menuitem">{{ icon('trash-2') }}Remove step</button>
+            </form>
+          </div>
+        </details>
+      </div>
+      {% endif %}
+
+      {% if t.editing %}
+      <form class="tray-form form-grid" method="post" action="/projects/{{ project.id }}/steps/{{ t.step.id }}/settings">
+        <input type="hidden" name="next" value="{{ here }}">
+        <div class="field">
+          <label for="step-title-{{ t.step.id }}">Step name</label>
+          <input id="step-title-{{ t.step.id }}" name="__title" value="{{ t.step.title }}" maxlength="200">
+        </div>
+        {% for ff in t.fields %}{{ field(ff, connections, 's' ~ t.step.id ~ '-') }}{% endfor %}
+        {% if not t.fields %}<p class="hint">This stage has no settings.</p>{% endif %}
+        <div class="form-actions">
+          <button class="btn primary">{{ icon('check') }}<span>Save</span></button>
+          <button class="btn" name="__then" value="run">{{ icon('play') }}<span>Save &amp; run</span></button>
+          <a class="btn ghost" href="{{ here }}">Cancel</a>
+        </div>
+        {% if t.stage and t.stage.docs %}
+        <details class="disclosure">
+          <summary>How this stage works</summary>
+          <div class="prose small">{{ t.stage.docs|markdown }}</div>
+        </details>
+        {% endif %}
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {{ insert_zone(trays|length, true) }}
+  <div class="pan">
+    <span class="label">Pan · passing through every sieve</span>
+    <span class="v">{{ counts.active|num }} <span class="small muted">of {{ counts.total|num }} keywords</span></span>
+  </div>
+  {% endif %}
+</section>

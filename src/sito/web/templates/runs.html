@@ -1,0 +1,31 @@
+{% extends "project.html" %}
+{% from "_fields.html" import badge %}
+{% block panel %}
+{% if runs %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th class="num">Run</th><th>Step</th><th>Status</th><th class="num">In</th><th class="num">Pass</th><th>Started</th><th class="num">Took</th><th class="actions"><span class="sr-only">Actions</span></th></tr></thead>
+    <tbody>
+    {% for run in runs %}
+      {% set stats = run.stats or {} %}
+      <tr>
+        <td class="num">{{ run.id }}</td>
+        <td class="kw">{{ run.title or run.stage_id }}</td>
+        <td>{{ badge(run) }}</td>
+        <td class="num">{{ stats.get('active_before')|num }}</td>
+        <td class="num">{{ stats.get('active_after')|num }}</td>
+        <td class="nowrap">{{ run.started_at|dt }}</td>
+        <td class="num">{{ run.started_at|duration(run.finished_at) if run.started_at else '—' }}</td>
+        <td class="actions"><a class="btn sm ghost" href="/projects/{{ project.id }}/runs/{{ run.id }}">{{ icon('history') }}<span>Log</span></a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">
+  <h3>Nothing has run yet</h3>
+  <p>Every time a step runs, it is recorded here with its log, its numbers and the snapshots taken before and after it. Press <strong>Run</strong> on a step in the pipeline to start.</p>
+</div>
+{% endif %}
+{% endblock %}

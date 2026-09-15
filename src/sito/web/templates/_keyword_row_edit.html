@@ -1,0 +1,24 @@
+{# Inline editor for one keyword row. Inputs live directly in <td>s (no <form>, invalid inside
+   <tr>); the Save button submits them via hx-include="closest tr". #}
+<tr id="kw-{{ kw.id }}" class="is-editing">
+  <td class="sel"></td>
+  <td><input name="keyword" value="{{ form.keyword if form else kw.keyword }}" maxlength="500" required autofocus aria-label="Keyword"></td>
+  <td class="status"></td>
+  <td class="num"><input type="number" step="1" name="volume" value="{{ form.volume if form else (kw.volume if kw.volume is not none else '') }}"></td>
+  <td class="num"><input type="number" step="any" name="kd" value="{{ form.kd if form else (kw.kd if kw.kd is not none else '') }}"></td>
+  <td class="num"><input type="number" step="any" name="cpc" value="{{ form.cpc if form else (kw.cpc if kw.cpc is not none else '') }}"></td>
+  <td class="wrap" colspan="{{ data_fields|length or 1 }}">
+    <textarea name="data" rows="2" placeholder="key: value, one per line">{{ data_text }}</textarea>
+  </td>
+  <td colspan="3" class="actions">
+    <div class="cell-edit">
+      <button type="button" class="btn sm primary"
+        hx-post="/projects/{{ pid }}/keywords/{{ kw.id }}/edit" hx-include="closest tr" hx-target="closest tr" hx-swap="outerHTML">
+        {{ icon('check', 'Save') }}
+      </button>
+      <a class="btn sm ghost icon-only" href="/projects/{{ pid }}/keywords/{{ kw.id }}/row"
+         hx-get="/projects/{{ pid }}/keywords/{{ kw.id }}/row" hx-target="closest tr" hx-swap="outerHTML" title="Cancel">{{ icon('x', 'Cancel') }}</a>
+    </div>
+    {% if error %}<p class="error-text">{{ error }}</p>{% endif %}
+  </td>
+</tr>

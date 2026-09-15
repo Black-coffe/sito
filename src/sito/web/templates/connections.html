@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Connections{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Connections</h1>
+    <p class="lede">API keys and endpoints for the services your steps use. Keys are stored only in your local database and are never shown again after saving.</p>
+  </div>
+  <a class="btn primary" href="/connections/new">{{ icon('plus') }}<span>Add connection</span></a>
+</header>
+
+{% if not groups %}
+<div class="empty">
+  <h3>No connections yet</h3>
+  <p>A connection is one configured service: an OpenAI or Anthropic key, a local Ollama server, a SERP API account. Each provider page tells you where to get a key, what it costs, and lets you test it before use.</p>
+  <a class="btn primary" href="/connections/new">{{ icon('plus') }}<span>Add a connection</span></a>
+</div>
+{% endif %}
+
+{% for kind, (kind_title, kind_desc), items in groups %}
+<section class="section" aria-labelledby="kind-{{ kind }}">
+  <h2 id="kind-{{ kind }}" class="group-title">{{ kind_title }}</h2>
+  {% if kind_desc %}<p class="hint">{{ kind_desc }}</p>{% endif %}
+  <div class="list spaced">
+    {% for item in items %}
+    <div class="list-item" id="conn-{{ item.row.id }}">
+      <div class="title">{{ item.row.name }}</div>
+      <div class="meta">
+        <span>{{ item.cls.name if item.cls else item.row.connector_id ~ ' (plugin missing)' }}</span>
+        {% if item.secret %}<span>key {{ item.secret }}</span>{% endif %}
+        <span>added {{ item.row.created_at|dt }}</span>
+      </div>
+      <div class="aside">
+        <span id="test-{{ item.row.id }}"></span>
+        {% if item.cls %}
+        <form method="post" action="/connections/{{ item.row.id }}/test" hx-post="/connections/{{ item.row.id }}/test" hx-target="#test-{{ item.row.id }}" hx-swap="innerHTML">
+          <button class="btn sm">{{ icon('plug') }}<span>Test</span></button>
+        </form>
+        <a class="btn sm" href="/connections/{{ item.row.id }}">{{ icon('pencil') }}<span>Edit</span></a>
+        {% endif %}
+        <form method="post" action="/connections/{{ item.row.id }}/delete" data-confirm="Delete the connection «{{ item.row.name }}»? Steps that use it will ask for another one.">
+          <button class="btn sm ghost icon-only" title="Delete">{{ icon('trash-2', 'Delete') }}</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+<section class="section panel">
+  <div class="panel-head"><h2>Where keys live</h2></div>
+  <div class="panel-body stack small">
+    <p>Saved keys are written to the local database <code>{{ db_path }}</code> on this computer. They are sent only to the provider's own API when a step or a test runs.</p>
+    <p>Prefer environment variables? Type <code>env:VARIABLE_NAME</code> instead of the key (for example <code>env:OPENAI_API_KEY</code>) and sito reads it at run time, so the key never touches the database. Details in <a href="/docs/connections">Connections and API keys</a>.</p>
+  </div>
+</section>
+{% endblock %}

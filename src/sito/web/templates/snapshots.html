@@ -1,0 +1,62 @@
+{% extends "project.html" %}
+{% block panel %}
+<p class="hint">A snapshot freezes the keyword table (and clusters) before and after every step, so any step can be
+  undone and any point in the pipeline can be exported later. The oldest snapshots beyond {{ snapshot_limit }} are
+  pruned automatically.</p>
+
+<form method="post" action="/projects/{{ project.id }}/snapshots" class="toolbar">
+  <input type="text" name="label" placeholder="Label (optional)" class="grow">
+  <button class="btn primary" {% if run_blocked %}disabled{% endif %}>{{ icon('layers') }}<span>Take snapshot now</span></button>
+</form>
+
+{% if not snapshots %}
+<div class="empty">
+  <h3>No snapshots yet</h3>
+  <p>Run a pipeline step, or take one manually above.</p>
+</div>
+{% else %}
+<div class="table-wrap">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Label</th><th>When</th><th class="num">Passing</th><th class="num">Total</th><th>Run</th>
+        <th class="actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in snapshots %}
+      <tr>
+        <td class="wrap">{{ s.label }}</td>
+        <td class="nowrap">{{ s.created_at|ago }}</td>
+        <td class="num">{{ s.active_count|num }}</td>
+        <td class="num">{{ s.keyword_count|num }}</td>
+        <td>{% if s.run_id %}<a href="/projects/{{ project.id }}/runs/{{ s.run_id }}">{{ icon('history', 'Run') }}</a>{% endif %}</td>
+        <td class="actions">
+          <div class="row">
+            <details class="menu">
+              <summary class="btn sm ghost icon-only" title="Export this snapshot">{{ icon('download', 'Export') }}</summary>
+              <div class="menu-list" role="menu">
+                <a role="menuitem" href="/projects/{{ project.id }}/snapshots/{{ s.id }}/export?format=xlsx&scope=all">{{ icon('file-down') }}Excel (.xlsx)</a>
+                <a role="menuitem" href="/projects/{{ project.id }}/snapshots/{{ s.id }}/export?format=csv&scope=all">{{ icon('file-down') }}CSV</a>
+                <a role="menuitem" href="/projects/{{ project.id }}/snapshots/{{ s.id }}/export?format=json&scope=all">{{ icon('file-down') }}JSON</a>
+                <span class="sep" role="separator"></span>
+                <span class="menu-label">Passing only</span>
+                <a role="menuitem" href="/projects/{{ project.id }}/snapshots/{{ s.id }}/export?format=xlsx&scope=active">{{ icon('file-down') }}Excel (.xlsx)</a>
+              </div>
+            </details>
+            <form method="post" action="/projects/{{ project.id }}/snapshots/{{ s.id }}/restore"
+                  data-confirm="Restore the keyword list to «{{ s.label }}»? The current state is saved as a snapshot first, so this can be undone too.">
+              <button class="btn sm ghost icon-only" title="Restore this snapshot" {% if run_blocked %}disabled{% endif %}>{{ icon('undo-2', 'Restore') }}</button>
+            </form>
+            <form method="post" action="/projects/{{ project.id }}/snapshots/{{ s.id }}/delete" data-confirm="Delete this snapshot? This can't be undone.">
+              <button class="btn sm ghost icon-only" title="Delete this snapshot">{{ icon('trash-2', 'Delete') }}</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

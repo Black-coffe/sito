@@ -1,0 +1,22 @@
+{% extends "docs.html" %}
+{% block article %}
+<h1>Stages and connectors</h1>
+<p>Generated from the plugins installed right now, so it always matches what you can use. Built-in and third-party plugins look the same here.</p>
+{% for kind, items in stages %}
+<h2>{{ kind.label }} stages</h2>
+{% for s in items %}
+<h3 id="stage-{{ s.id }}">{{ s.name }} <code>{{ s.id }}</code></h3>
+<p>{{ s.summary }}</p>
+{{ s.docs|markdown }}
+{% endfor %}
+{% endfor %}
+{% for kind, (kind_title, kind_desc), items in connectors %}
+<h2>{{ kind_title }}</h2>
+{% if kind_desc %}<p>{{ kind_desc }}</p>{% endif %}
+{% for c in items %}
+<h3 id="connector-{{ c.id }}">{{ c.name }} <code>{{ c.id }}</code></h3>
+<p>{{ c.summary }}{% if c.signup_url %} — <a href="{{ c.signup_url }}" target="_blank" rel="noopener">provider site</a>{% endif %}</p>
+{{ c.docs|markdown }}
+{% endfor %}
+{% endfor %}
+{% endblock %}

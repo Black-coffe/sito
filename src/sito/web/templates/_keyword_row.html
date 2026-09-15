@@ -1,0 +1,24 @@
+{# One row of the keywords table (also returned standalone by HTMX after edit/cancel). #}
+<tr id="kw-{{ kw.id }}" class="{{ 'is-excluded' if kw.excluded }}">
+  <td class="sel"><input type="checkbox" name="ids" value="{{ kw.id }}" aria-label="Select {{ kw.keyword }}"></td>
+  <td class="kw">{{ kw.keyword }}</td>
+  <td class="status">
+    {% if kw.excluded %}<span class="badge cancelled">Excluded</span>{% if kw.excluded_reason %} <span class="reason" title="{{ kw.excluded_reason }}">{{ kw.excluded_reason|truncate(40) }}</span>{% endif %}
+    {% else %}<span class="badge done">Passing</span>{% endif %}
+  </td>
+  <td class="num">{{ kw.volume|num }}</td>
+  <td class="num">{{ kw.kd|num }}</td>
+  <td class="num">{{ kw.cpc|num }}</td>
+  {% for f in data_fields %}
+  {% set v = (kw.data or {}).get(f, '') %}
+  {% if v is number and v is not boolean %}<td class="num">{{ v|num }}</td>
+  {% else %}<td class="data"{% if v is string and v|length > 24 %} title="{{ v }}"{% endif %}>{{ v }}</td>{% endif %}
+  {% endfor %}
+  <td>{% if cluster_name %}<span class="tag" title="{{ cluster_name }}">{{ cluster_name }}</span>{% endif %}</td>
+  <td>{{ kw.source }}</td>
+  <td class="actions">
+    {% if error %}<p class="error-text">{{ error }}</p>{% endif %}
+    <a class="btn sm ghost icon-only" href="/projects/{{ pid }}/keywords/{{ kw.id }}/edit"
+       hx-get="/projects/{{ pid }}/keywords/{{ kw.id }}/edit" hx-target="closest tr" hx-swap="outerHTML" title="Edit">{{ icon('pencil', 'Edit') }}</a>
+  </td>
+</tr>

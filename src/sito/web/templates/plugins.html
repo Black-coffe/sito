@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Plugins{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Plugins</h1>
+    <p class="lede">Everything sito can do comes from plugins: stages that work on keywords and connectors that talk to services. Add your own by dropping a Python file into the plugins folder.</p>
+  </div>
+  <a class="btn" href="/docs/writing-plugins">{{ icon('book-open') }}<span>Write a plugin</span></a>
+</header>
+
+{% if errors %}
+<div class="flash error">{{ icon('circle-alert') }}<div><strong>Some plugins failed to load.</strong>{% for e in errors %}
+{{ e }}{% endfor %}</div></div>
+{% endif %}
+
+<section class="panel">
+  <div class="panel-body"><dl class="kv">
+    <dt>Plugins folder</dt><dd><code>{{ plugins_dir }}</code> — every <code>*.py</code> file here is loaded on start (restart sito after adding one).</dd>
+    <dt>Packages</dt><dd>Installed Python packages can register plugins through the <code>sito.plugins</code> entry point.</dd>
+  </dl></div>
+</section>
+
+<section class="section" aria-labelledby="stages-title">
+  <h2 id="stages-title">Stages</h2>
+  {% for kind, items in stages %}
+  <h3 class="group-title label">{{ kind.label }}</h3>
+  <div class="list">
+    {% for s in items %}
+    <div class="list-item">
+      <div class="title">{{ s.name }} <code class="small">{{ s.id }}</code></div>
+      <div class="meta"><span>{{ s.summary }}</span><span>{{ origins.get('stage:' ~ s.id, '') }}</span></div>
+      {% if s.docs %}
+      <details class="disclosure full"><summary>Documentation</summary><div class="prose small">{{ s.docs|markdown }}</div></details>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</section>
+
+<section class="section" aria-labelledby="connectors-title">
+  <h2 id="connectors-title">Connectors</h2>
+  {% for kind, (kind_title, kind_desc), items in connectors %}
+  <h3 class="group-title label">{{ kind_title }}</h3>
+  <div class="list">
+    {% for c in items %}
+    <div class="list-item">
+      <div class="title">{{ c.name }} <code class="small">{{ c.id }}</code></div>
+      <div class="meta"><span>{{ c.summary }}</span><span>{{ origins.get('connector:' ~ c.id, '') }}</span></div>
+      <div class="aside"><a class="btn sm" href="/connections/new/{{ c.id }}">{{ icon('plus') }}<span>Connect</span></a></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

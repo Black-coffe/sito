@@ -1,0 +1,31 @@
+{% extends "project.html" %}
+{% block panel %}
+<div class="panel">
+  <div class="panel-head">
+    <h2>{{ kw.keyword }}</h2>
+    <a class="btn sm ghost" href="/projects/{{ project.id }}/serp"><span>Back to SERP</span></a>
+  </div>
+  <div class="panel-body">
+    {% if not results %}
+    <p class="muted">No SERP data stored for this keyword.</p>
+    {% else %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th class="num">#</th><th>Title</th><th>Domain</th><th>Kind</th><th class="wrap">Snippet</th></tr></thead>
+        <tbody>
+          {% for r in results %}
+          <tr>
+            <td class="num">{{ r.position }}</td>
+            <td class="wrap"><a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.title or r.url }}</a></td>
+            <td>{{ r.domain }}</td>
+            <td><span class="tag">{{ r.kind }}</span></td>
+            <td class="wrap">{{ r.snippet }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

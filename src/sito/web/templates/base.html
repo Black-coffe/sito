@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}sito{% endblock %} · sito</title>
+  <link rel="icon" href="{{ url_for('static', path='favicon.svg') }}" type="image/svg+xml">
+  <link rel="preload" href="{{ url_for('static', path='fonts/golos-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}?v={{ version }}">
+  <script>try{var t=localStorage.getItem("sito-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <script src="{{ url_for('static', path='vendor/htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', path='app.js') }}?v={{ version }}" defer></script>
+</head>
+<body>
+{{ icon_sprite }}
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="/" aria-label="sito home">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="brand-mesh"><circle cx="12" cy="12" r="7.6"/></clipPath></defs>
+      <circle class="frame" cx="12" cy="12" r="9.5" fill="none" stroke-width="2.4"/>
+      <g clip-path="url(#brand-mesh)" class="mesh" stroke-width="1.2"><path d="M3 7.5h18M3 10.5h18M3 13.5h18M3 16.5h18M7.5 3v18M10.5 3v18M13.5 3v18M16.5 3v18"/></g>
+    </svg>
+    <span>sito</span>
+  </a>
+  <nav class="nav" aria-label="Main">
+    <a href="/" {% if nav == 'projects' %}aria-current="page"{% endif %}>Projects</a>
+    <a href="/connections" {% if nav == 'connections' %}aria-current="page"{% endif %}>Connections</a>
+    <a href="/plugins" {% if nav == 'plugins' %}aria-current="page"{% endif %}>Plugins</a>
+    <a href="/docs" {% if nav == 'docs' %}aria-current="page"{% endif %}>Docs</a>
+  </nav>
+  <div class="topbar-end">
+    <span class="version">v{{ version }}</span>
+    <button type="button" class="btn ghost icon-only" data-theme-toggle title="Switch light/dark theme">{{ icon('moon', 'Switch light/dark theme') }}</button>
+  </div>
+</header>
+{% set notice = request.query_params.get('notice') %}
+{% set error = request.query_params.get('error') %}
+{% if notice or error %}
+<div class="flash-host" role="status" aria-live="polite">
+  {% if error %}<div class="flash error">{{ icon('circle-alert') }}<div>{{ error }}</div></div>{% endif %}
+  {% if notice %}<div class="flash notice">{{ icon('circle-check') }}<div>{{ notice }}</div></div>{% endif %}
+</div>
+{% endif %}
+<main id="main" class="{% block main_class %}page{% endblock %}">
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

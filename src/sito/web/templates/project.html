@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{# Workspace frame: sieve stack on the left, header + tabs + {% block panel %} on the right.
+   Tab templates extend this file and fill `panel`. Context comes from sito.web.workspace. #}
+{% block title %}{{ project.name }}{% endblock %}
+{% block main_class %}workspace{% endblock %}
+{% block content %}
+<aside class="stack-col" aria-label="Pipeline">
+  {% include "_pipeline.html" %}
+</aside>
+  <header class="page-head ws-head">
+    <div>
+      <h1>{{ project.name }}</h1>
+      {% if project.description %}<p class="lede">{{ project.description }}</p>{% endif %}
+    </div>
+    <div class="row">
+      <div class="readouts" aria-label="Keyword counts">
+        <div class="readout {{ 'is-zero' if not counts.active }}"><span class="v">{{ counts.active|num }}</span><span class="k">Passing</span></div>
+        <div class="readout {{ 'is-zero' if not counts.excluded }}"><span class="v">{{ counts.excluded|num }}</span><span class="k">Excluded</span></div>
+        <div class="readout {{ 'is-zero' if not counts.clusters }}"><span class="v">{{ counts.clusters|num }}</span><span class="k">Clusters</span></div>
+      </div>
+      <a class="btn" href="/projects/{{ project.id }}/import">{{ icon('upload') }}<span>Import</span></a>
+      <details class="menu">
+        <summary class="btn">{{ icon('download') }}<span>Export</span>{{ icon('chevron-down') }}</summary>
+        <div class="menu-list" role="menu">
+          <span class="menu-label">Passing keywords</span>
+          <a role="menuitem" href="/projects/{{ project.id }}/export?format=xlsx&scope=active">{{ icon('file-down') }}Excel (.xlsx)</a>
+          <a role="menuitem" href="/projects/{{ project.id }}/export?format=csv&scope=active">{{ icon('file-down') }}CSV</a>
+          <a role="menuitem" href="/projects/{{ project.id }}/export?format=json&scope=active">{{ icon('file-down') }}JSON</a>
+          <span class="sep" role="separator"></span>
+          <span class="menu-label">Everything, incl. excluded</span>
+          <a role="menuitem" href="/projects/{{ project.id }}/export?format=xlsx&scope=all">{{ icon('file-down') }}Excel (.xlsx)</a>
+          <a role="menuitem" href="/projects/{{ project.id }}/export?format=csv&scope=all">{{ icon('file-down') }}CSV</a>
+        </div>
+      </details>
+    </div>
+  </header>
+<div class="main-col">
+  <nav class="tabs" aria-label="Project sections">
+    {% for key, label in tabs %}
+    <a class="tab" href="/projects/{{ project.id }}/{{ key }}" {% if tab == key %}aria-current="page"{% endif %}>{{ label }}
+      {% if key == 'keywords' %}<span class="count">{{ counts.total|num }}</span>
+      {% elif key == 'clusters' and counts.clusters %}<span class="count">{{ counts.clusters|num }}</span>
+      {% elif key == 'snapshots' and counts.snapshots %}<span class="count">{{ counts.snapshots|num }}</span>
+      {% elif key == 'runs' and counts.runs %}<span class="count">{{ counts.runs|num }}</span>{% endif %}
+    </a>
+    {% endfor %}
+  </nav>
+  {% block panel %}{% endblock %}
+</div>
+{% endblock %}

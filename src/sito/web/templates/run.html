@@ -1,0 +1,42 @@
+{% extends "project.html" %}
+{% from "_fields.html" import badge %}
+{% block panel %}
+<div id="run-detail" class="stack"
+  {% if run.status in ('running', 'queued') %}hx-get="{{ request.url.path }}" hx-select="#run-detail" hx-target="this" hx-swap="outerHTML" hx-trigger="every 1s"{% endif %}>
+  <div class="row"><a class="btn sm ghost" href="/projects/{{ project.id }}/runs">{{ icon('chevron-right') }}<span>All runs</span></a></div>
+  <section class="panel">
+    <div class="panel-head"><h2>Run {{ run.id }} · {{ run.title or run.stage_id }}</h2>{{ badge(run) }}</div>
+    <div class="panel-body">
+      <dl class="kv">
+        <dt>Stage</dt><dd><code>{{ run.stage_id }}</code></dd>
+        <dt>Queued</dt><dd>{{ run.created_at|dt }}</dd>
+        <dt>Started</dt><dd>{{ run.started_at|dt }}</dd>
+        <dt>Finished</dt><dd>{{ run.finished_at|dt }}</dd>
+        <dt>Took</dt><dd class="num">{{ run.started_at|duration(run.finished_at) if run.started_at else '—' }}</dd>
+        {% if live and live.total %}<dt>Progress</dt><dd class="num">{{ live.done|num }} / {{ live.total|num }}{% if live.message %} — {{ live.message }}{% endif %}</dd>{% endif %}
+        {% for key, value in stats.items() %}
+        <dt>{{ key.replace('_', ' ') }}</dt><dd class="num">{% if value is mapping %}{% for k, v in value.items() %}<span class="tag">{{ k }}: {{ v|num }}</span> {% endfor %}{% elif value is number %}{{ value|num }}{% else %}{{ value }}{% endif %}</dd>
+        {% endfor %}
+      </dl>
+      {% if run.snapshot_id %}
+      <div class="row spaced">
+        <span class="label">Result after this run</span>
+        <a class="btn sm" href="/projects/{{ project.id }}/snapshots/{{ run.snapshot_id }}/export?format=xlsx">{{ icon('file-down') }}<span>Excel</span></a>
+        <a class="btn sm" href="/projects/{{ project.id }}/snapshots/{{ run.snapshot_id }}/export?format=csv">{{ icon('file-down') }}<span>CSV</span></a>
+        {% if stats.get('file') %}<a class="btn sm" href="/projects/{{ project.id }}/runs/{{ run.id }}/file">{{ icon('file-down') }}<span>{{ stats.get('file') }}</span></a>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% if run.error %}
+  <section class="panel">
+    <div class="panel-head"><h2>Error</h2></div>
+    <div class="panel-body"><pre class="log">{{ run.error }}</pre></div>
+  </section>
+  {% endif %}
+  <section class="panel">
+    <div class="panel-head"><h2>Log</h2></div>
+    <div class="panel-body">{% if log_text %}<pre class="log">{{ log_text }}</pre>{% else %}<p class="hint">No log lines yet.</p>{% endif %}</div>
+  </section>
+</div>
+{% endblock %}

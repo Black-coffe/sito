@@ -1,0 +1,150 @@
+{% extends "project.html" %}
+{% block panel %}
+
+{% macro sort_th(key, label, numeric=false) %}
+{% set active = sort == key %}
+{% set next_dir = 'asc' if active and dir == 'desc' else 'desc' %}
+<th{% if numeric %} class="num"{% endif %}>
+  <a class="sort" href="{{ qs(sort=key, dir=next_dir) }}">
+    <span>{{ label }}</span>
+    {% if active %}{{ icon('arrow-down' if dir == 'desc' else 'arrow-up') }}{% endif %}
+  </a>
+</th>
+{% endmacro %}
+
+{% if total == 0 and not has_filters %}
+<div class="empty">
+  <h3>No keywords yet</h3>
+  <p>Import a file (Ahrefs, Semrush, Keyword Planner, or sito's own export), paste a list below, or add a
+  "Collect" step to the pipeline to bring keywords in automatically.</p>
+  <div class="row">
+    <a class="btn primary" href="/projects/{{ project.id }}/import">{{ icon('upload') }}<span>Import</span></a>
+    <details class="menu">
+      <summary class="btn">{{ icon('plus') }}<span>Add keywords</span>{{ icon('chevron-down') }}</summary>
+      <div class="menu-list">
+        <form class="stack" method="post" action="/projects/{{ project.id }}/keywords/add">
+          <div class="field">
+            <label for="add-kw">One keyword per line</label>
+            <textarea id="add-kw" name="keywords" rows="6" placeholder="buy dedicated server"></textarea>
+          </div>
+          <div class="form-actions"><button class="btn sm primary">{{ icon('plus') }}<span>Add</span></button></div>
+        </form>
+      </div>
+    </details>
+  </div>
+</div>
+{% else %}
+
+<form method="get" action="/projects/{{ project.id }}/keywords" class="toolbar">
+  <div class="grow"><input type="search" name="q" value="{{ q }}" placeholder="Search keyword text…"></div>
+  <select name="status" data-autosubmit>
+    <option value="all" {% if status == 'all' %}selected{% endif %}>All statuses</option>
+    <option value="passing" {% if status == 'passing' %}selected{% endif %}>Passing</option>
+    <option value="excluded" {% if status in ('excluded', 'retained') %}selected{% endif %}>Excluded</option>
+  </select>
+  <select name="source" data-autosubmit>
+    <option value="">All sources</option>
+    {% for s in sources %}<option value="{{ s }}" {% if s == source %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+  <select name="cluster" data-autosubmit>
+    <option value="">All clusters</option>
+    <option value="none" {% if cluster == 'none' %}selected{% endif %}>No cluster</option>
+    {% for cid, cname in clusters %}<option value="{{ cid }}" {% if cluster == cid|string %}selected{% endif %}>{{ cname }}</option>{% endfor %}
+  </select>
+  <span class="filter-pair">
+    <input type="text" name="field" value="{{ field }}" placeholder="Field name" list="data-fields" aria-label="Filter by field">
+    <datalist id="data-fields">{% for f in data_fields %}<option value="{{ f }}">{% endfor %}</datalist>
+    <input type="text" name="value" value="{{ value }}" placeholder="Value (- = empty)" aria-label="Field value">
+  </span>
+  <select name="per" data-autosubmit>
+    {% for p in per_options %}<option value="{{ p }}" {% if p == per %}selected{% endif %}>{{ p }}/page</option>{% endfor %}
+  </select>
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="hidden" name="dir" value="{{ dir }}">
+  <button class="btn sm">{{ icon('search') }}<span>Filter</span></button>
+  {% if has_filters %}<a class="btn sm ghost" href="/projects/{{ project.id }}/keywords">{{ icon('x') }}<span>Clear filters</span></a>{% endif %}
+  <span class="match-count" aria-live="polite"><strong>{{ total|num }}</strong> {{ 'match' if has_filters else 'keywords' }}</span>
+  <span class="spacer"></span>
+  <a class="btn sm" href="/projects/{{ project.id }}/import">{{ icon('upload') }}<span>Import</span></a>
+  <details class="menu">
+    <summary class="btn sm">{{ icon('plus') }}<span>Add keywords</span>{{ icon('chevron-down') }}</summary>
+    <div class="menu-list">
+      <form class="stack" method="post" action="/projects/{{ project.id }}/keywords/add">
+        <div class="field">
+          <label for="add-kw">One keyword per line</label>
+          <textarea id="add-kw" name="keywords" rows="6" placeholder="buy dedicated server"></textarea>
+        </div>
+        <div class="form-actions"><button class="btn sm primary">{{ icon('plus') }}<span>Add</span></button></div>
+      </form>
+    </div>
+  </details>
+</form>
+
+{% if run_blocked %}<p class="hint">A step is currently running in this project — editing is disabled until it finishes.</p>{% endif %}
+
+<form method="post" action="/projects/{{ project.id }}/keywords/bulk">
+  <input type="hidden" name="q" value="{{ q }}">
+  <input type="hidden" name="status" value="{{ status }}">
+  <input type="hidden" name="source" value="{{ source }}">
+  <input type="hidden" name="cluster" value="{{ cluster }}">
+  <input type="hidden" name="field" value="{{ field }}">
+  <input type="hidden" name="value" value="{{ value }}">
+
+  {% if not keywords %}
+  <div class="empty">
+    <h3>No keywords match these filters</h3>
+    <p>Try clearing a filter, or search for something else.</p>
+    <a class="btn" href="/projects/{{ project.id }}/keywords">{{ icon('x') }}<span>Clear filters</span></a>
+  </div>
+  {% else %}
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr>
+          <th class="sel"><input type="checkbox" data-select-all aria-label="Select all"></th>
+          {{ sort_th('keyword', 'Keyword') }}
+          <th>Status</th>
+          {{ sort_th('volume', 'Volume', true) }}
+          {{ sort_th('kd', 'KD', true) }}
+          {{ sort_th('cpc', 'CPC', true) }}
+          {% for f in data_fields %}{{ sort_th('data:' ~ f, f|humanize) }}{% endfor %}
+          <th>Cluster</th>
+          {{ sort_th('source', 'Source') }}
+          <th class="actions"><span class="sr-only">Edit</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for kw in keywords %}
+        {% with cluster_name = cluster_names.get(kw.cluster_id), pid = project.id, error = none %}
+        {% include "_keyword_row.html" %}
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <span class="muted">{{ page_start|num }}–{{ page_end|num }} of {{ total|num }}</span>
+    <div class="btn-group">
+      {% if page > 1 %}<a class="btn sm" href="{{ qs(page=page-1) }}">Prev</a>{% else %}<span class="btn sm" aria-disabled="true">Prev</span>{% endif %}
+      <span class="btn sm" aria-disabled="true">{{ page }} / {{ pages }}</span>
+      {% if page < pages %}<a class="btn sm" href="{{ qs(page=page+1) }}">Next {{ icon('chevron-right') }}</a>{% else %}<span class="btn sm" aria-disabled="true">Next {{ icon('chevron-right') }}</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="bulkbar" data-bulkbar hidden>
+    <span><strong data-count>0</strong> selected</span>
+    <label class="check"><input type="checkbox" name="apply_all" value="1"><span>apply to all {{ total|num }} matching the filter</span></label>
+    <input type="text" name="reason" placeholder="Reason (optional)">
+    <button class="btn sm" name="action" value="exclude">{{ icon('ban') }}<span>Exclude</span></button>
+    <button class="btn sm" name="action" value="include">{{ icon('undo-2') }}<span>Include again</span></button>
+    <input type="text" name="field_key" placeholder="Field name">
+    <input type="text" name="field_value" placeholder="Value">
+    <button class="btn sm" name="action" value="set_field">{{ icon('pencil') }}<span>Set field</span></button>
+    <span class="spacer"></span>
+    <button class="btn sm danger" name="action" value="delete" data-confirm="Delete the selected keywords? This cannot be undone from here (they may still be in a past snapshot).">{{ icon('trash-2') }}<span>Delete</span></button>
+  </div>
+  {% endif %}
+</form>
+{% endif %}
+{% endblock %}

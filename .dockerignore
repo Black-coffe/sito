@@ -1,0 +1,11 @@
+.git
+.venv
+venv
+sito-data
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.impeccable
+.env
+*.db
+tests

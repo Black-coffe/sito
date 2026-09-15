@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Add connection{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Add a connection</h1>
+    <p class="lede">Pick a provider. The next page shows where to get its key and a test button.</p>
+  </div>
+  <a class="btn ghost" href="/connections">{{ icon('arrow-left') }}<span>Back to connections</span></a>
+</header>
+{% for kind, (kind_title, kind_desc), items in catalog %}
+<section class="section" aria-labelledby="cat-{{ kind }}">
+  <h2 id="cat-{{ kind }}" class="group-title">{{ kind_title }}</h2>
+  {% if kind_desc %}<p class="hint">{{ kind_desc }}</p>{% endif %}
+  <div class="list spaced">
+    {% for cls in items %}
+    <div class="list-item">
+      <div class="title">{{ cls.name }}</div>
+      <div class="meta"><span>{{ cls.summary }}</span>{% if cls.signup_url %}<a href="{{ cls.signup_url }}" target="_blank" rel="noopener">Provider site {{ icon('external-link') }}</a>{% endif %}</div>
+      <div class="aside"><a class="btn {{ 'primary' if focus == kind else '' }}" href="/connections/new/{{ cls.id }}">{{ icon('plus') }}<span>Set up</span></a></div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<div class="empty"><h3>No connector plugins installed</h3><p>See <a href="/plugins">Plugins</a> for load errors.</p></div>
+{% endfor %}
+<p class="hint section">Missing a provider? A connector is a small Python class — see <a href="/docs/writing-plugins">Writing plugins</a>.</p>
+{% endblock %}

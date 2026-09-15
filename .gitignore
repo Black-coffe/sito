@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# sito runtime data: database (holds your API keys), exports, local plugins
+sito-data/
+*.db
+*.db-wal
+*.db-shm
+.env
+
+# Design tooling working files (DESIGN.md and PRODUCT.md at the root are the published record)
+.impeccable/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
